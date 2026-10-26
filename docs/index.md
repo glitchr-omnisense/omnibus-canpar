@@ -1,6 +1,6 @@
 # omnibus/canpar
 
-Canpar for [omniscient/omnibus](https://github.com/glitchr-studio/omnibus): rates, shipments with
+Canpar for [omnisense/omnibus](https://github.com/glitchr-omnisense/omnibus): rates, shipments with
 their labels, tracking and voids, through Canpar's CanShip web services (SOAP 1.1). The envelopes
 are written and read as XML over plain HTTP (`ext-soap` is not needed). The gateway calls:
 
@@ -21,7 +21,7 @@ under `https://canship.canpar.com/canshipws/services` (live) or
 composer require omnibus/canpar
 ```
 
-Requires PHP 8.2, `omniscient/omnibus` (2.x) and `symfony/http-client` (6.4, 7 or 8); given no
+Requires PHP 8.2, `omnisense/omnibus` (2.x) and `symfony/http-client` (6.4, 7 or 8); given no
 HTTP client, the factory makes one with `HttpClient::create()`. In a Symfony application with
 `Omnibus\Bridge\Symfony\OmnibusBundle`, the factory is registered as soon as the package is
 installed.
@@ -42,7 +42,7 @@ The user id and password travel inside every request's body.
 | `password` | string | - | yes | its password |
 | `shipper_number` | string | - | yes | the account number (`shipper_num`) |
 | `sandbox` | bool | `false` | no | `true`: `sandbox.canpar.com` |
-| `rates` | list | - | no | prices from configuration instead of `rateShipment` ([the rates option](https://github.com/glitchr-studio/omnibus/blob/2.x/docs/configuration.md#the-rates-option)): with it, `rateShipment` is not called |
+| `rates` | list | - | no | prices from configuration instead of `rateShipment` ([the rates option](https://github.com/glitchr-omnisense/omnibus/blob/2.x/docs/configuration.md#the-rates-option)): with it, `rateShipment` is not called |
 
 Shipment options (`Shipment::$options`):
 
