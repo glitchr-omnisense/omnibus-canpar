@@ -76,4 +76,13 @@ final class CanparGatewayTest extends TestCase
         self::assertStringContainsString('<xsd:id>70012345</xsd:id>', end($this->calls)[1]);
         self::assertFalse($gateway->supports(Pickup::class));
     }
+
+    /** Canpar's getLabels takes the shipment id, which trackByBarcode gives for the barcode: slip() fetches the label again. */
+    public function testALabelIsFetchedAgainThroughItsShipmentId(): void
+    {
+        $label = $this->gateway()->slip('D420000000012345');
+        self::assertSame('D420000000012345', $label->trackingNumber);
+        self::assertSame('%PDF-1.4 canpar', $label->content);
+        self::assertStringContainsString('<xsd:id>70012345</xsd:id>', end($this->calls)[1]);
+    }
 }

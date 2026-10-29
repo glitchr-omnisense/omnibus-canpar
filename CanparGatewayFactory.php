@@ -3,6 +3,7 @@
 namespace Omnibus\Canpar;
 
 use Omnibus\Canpar\Action\CancelAction;
+use Omnibus\Canpar\Action\GetSlipAction;
 use Omnibus\Canpar\Action\RatingAction;
 use Omnibus\Canpar\Action\ShippingAction;
 use Omnibus\Canpar\Action\TrackingAction;
@@ -38,6 +39,7 @@ final class CanparGatewayFactory extends GatewayFactory
             'omnibus.action.shipping' => new ShippingAction(),
             'omnibus.action.tracking' => new TrackingAction(),
             'omnibus.action.cancel' => new CancelAction(),
+            'omnibus.action.get_slip' => new GetSlipAction(),
         ]);
     }
 }

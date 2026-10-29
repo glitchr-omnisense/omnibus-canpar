@@ -42,12 +42,15 @@ final class ShippingAction implements ActionInterface, ApiAwareInterface
         }
         $content = null;
         try {
-            $labels = $this->api->call(Api::SHIPPING, 'getLabels', '<xsd:id>'.Api::e($id).'</xsd:id><xsd:thermal>'.($thermal ? 'true' : 'false').'</xsd:thermal>');
-            $encoded = (string) ($labels->labels[0] ?? $labels->labels ?? '');
-            $content = '' !== $encoded ? base64_decode($encoded) : null;
+            $content = GetSlipAction::fetch($this->api, $id, $thermal);
         } catch (CarrierException) {
-            // The label follows: GetSlip asks again.
+            // The shipment is processed; slip() fetches its label again.
         }
-        $request->setResult(new Label('canpar', $number, $content, $thermal ? Label::ZPL : Label::PDF, null, 'https://www.canpar.com/en/tracking/track.htm?barcode='.rawurlencode($number)));
+        $request->setResult(new Label('canpar', $number, $content, $thermal ? Label::ZPL : Label::PDF, null, self::trackingUrl($number)));
+    }
+
+    public static function trackingUrl(string $number): string
+    {
+        return 'https://www.canpar.com/en/tracking/track.htm?barcode='.rawurlencode($number);
     }
 }

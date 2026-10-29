@@ -63,7 +63,7 @@ The address model has no province: it comes from the two options.
 | `Shipping` | yes |
 | `Tracking` | yes |
 | `Pickup` | no: Canpar delivers to the door |
-| `GetSlip` | no |
+| `GetSlip` | yes: the label again, through the barcode's shipment id |
 | `Cancel` | yes (void) |
 | `Paperless` | no |
 
@@ -105,8 +105,7 @@ Rates come cheapest first; `toPickupPoint` is `false`.
 **Ship.** `processShipment`; the tracking number is the first package's barcode, and the
 shipment's `id` is kept for the label: `getLabels` with `thermal` true for `ZPL`. The label is the
 first one returned, base64-decoded, `application/zpl` or `application/pdf`. When `getLabels`
-fails, the booking still succeeds without content (a comment in `ShippingAction` says `GetSlip`
-asks again; `GetSlip` is not supported). One `Label` carries the first package's barcode for the
+fails, the booking still succeeds without content: `slip()` fetches the label again. One `Label` carries the first package's barcode for the
 whole shipment. `trackingUrl` is `https://www.canpar.com/en/tracking/track.htm?barcode=<number>`.
 A response without an id or a barcode is a `CarrierException` (`Canpar booked no shipment.`).
 
@@ -126,6 +125,11 @@ from its code and its English description in this order:
 | `MAN` | `manifest`, `shipment created` | `PENDING` |
 | any other code | | `IN_TRANSIT` |
 | no code | | `UNKNOWN` |
+
+**Slip.** `trackByBarcode` for the barcode's shipment id (none: a `CarrierException`, `Canpar
+knows no shipment for <barcode>.`), then `getLabels` for it, thermal for `Label::ZPL`: the first
+label, base64-decoded, `application/pdf` or `application/zpl` (none: `Canpar gave no label for
+<barcode>.`).
 
 **Cancel.** Canpar voids by shipment id, not by barcode: `trackByBarcode` first finds the
 shipment's id (`shipment_id`, else `id`); none gives `false`. Then `voidShipment` with that id:
@@ -200,8 +204,8 @@ Every failure is an `Omnibus\Exception\CarrierException` whose `carrier` is `can
 - `Canpar booked no shipment.` when no id or barcode comes back.
 
 A failed `getLabels` after the shipment is created is not raised (above). A missing `user_id`,
-`password` or `shipper_number` is an `InvalidConfigException` when the gateway is built; `Pickup`,
-`GetSlip` and `Paperless` raise `RequestNotSupportedException` before any call.
+`password` or `shipper_number` is an `InvalidConfigException` when the gateway is built; `Pickup` and
+`Paperless` raise `RequestNotSupportedException` before any call.
 
 ## Verified, and not
 
