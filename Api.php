@@ -3,6 +3,7 @@
 namespace Omnibus\Canpar;
 
 use Omnibus\Exception\CarrierException;
+use Omnibus\Http\Redaction;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface as HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -46,21 +47,23 @@ final class Api
             $status = $response->getStatusCode();
             $content = $response->getContent(false);
         } catch (HttpExceptionInterface $e) {
-            throw new CarrierException('canpar', 'Canpar request failed: '.$e->getMessage(), null, $e);
+            $secrets = $this->secrets();
+
+            throw Redaction::withoutArguments(new CarrierException('canpar', 'Canpar request failed: '.Redaction::text($e->getMessage(), $secrets), null, Redaction::copy($e, $secrets)));
         }
         $xml = @simplexml_load_string(preg_replace(['/<(\/?)[\w-]+:/', '/\sxmlns(:\w+)?="[^"]*"/'], ['<$1', ''], $content));
         if (false === $xml) {
-            throw new CarrierException('canpar', sprintf('Canpar answered HTTP %d with a body that is not SOAP.', $status));
+            throw Redaction::withoutArguments(new CarrierException('canpar', sprintf('Canpar answered HTTP %d with a body that is not SOAP.', $status)));
         }
         if (isset($xml->Body->Fault)) {
-            throw new CarrierException('canpar', (string) ($xml->Body->Fault->faultstring ?? 'SOAP fault'));
+            throw Redaction::withoutArguments(new CarrierException('canpar', (string) ($xml->Body->Fault->faultstring ?? 'SOAP fault')));
         }
         $result = $xml->Body->children()[0]->return ?? null;
         if ($status >= 400 || null === $result) {
-            throw new CarrierException('canpar', sprintf('HTTP %d', $status));
+            throw Redaction::withoutArguments(new CarrierException('canpar', sprintf('HTTP %d', $status)));
         }
         if ('' !== trim((string) ($result->error ?? ''))) {
-            throw new CarrierException('canpar', (string) $result->error);
+            throw Redaction::withoutArguments(new CarrierException('canpar', (string) $result->error));
         }
 
         return $result;
@@ -69,5 +72,15 @@ final class Api
     public static function e(string $s): string
     {
         return htmlspecialchars($s, \ENT_XML1 | \ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * What a failure must not carry: the credentials, and what a request made of them.
+     *
+     * @return list<string>
+     */
+    private function secrets(string ...$more): array
+    {
+        return [$this->password, ...$more];
     }
 }
