@@ -4,6 +4,8 @@ namespace Omnibus\Canpar;
 
 use Omnibus\Exception\CarrierException;
 use Omnibus\Http\Redaction;
+use Omnibus\Http\Throttle;
+use Omnisense\Contracts\Policy\Backoff;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface as HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -30,6 +32,8 @@ final class Api
         public readonly string $shipperNumber,
         public readonly bool $sandbox = false,
         private readonly int $timeout = 20,
+        /** The waits the carrier asks for (omnisense/contracts' Backoff): no call while one lasts, a 429 a RateLimitedException, never retried */
+        private readonly ?Backoff $backoff = null,
     ) {
     }
 
@@ -39,12 +43,14 @@ final class Api
         $envelope = '<?xml version="1.0" encoding="utf-8"?><soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="'.self::NS_WS.'" xmlns:xsd="'.self::NS_DTO.'">'
             .'<soapenv:Body><ws:'.$operation.'><ws:request><xsd:user_id>'.self::e($this->userId).'</xsd:user_id><xsd:password>'.self::e($this->password).'</xsd:password>'.$request.'</ws:request></ws:'.$operation.'></soapenv:Body></soapenv:Envelope>';
         try {
+            Throttle::before($this->backoff);
             $response = $this->http->request('POST', ($this->sandbox ? self::TEST : self::LIVE).'/'.$service, [
                 'headers' => ['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => 'urn:'.$operation],
                 'body' => $envelope,
                 'timeout' => $this->timeout,
             ]);
             $status = $response->getStatusCode();
+            Throttle::after($this->backoff, 'canpar', $status, $response->getHeaders(false));
             $content = $response->getContent(false);
         } catch (HttpExceptionInterface $e) {
             $secrets = $this->secrets();

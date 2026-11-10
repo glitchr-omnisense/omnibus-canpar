@@ -28,12 +28,13 @@ final class CanparGatewayFactory extends GatewayFactory
         $config->defaults([
             'omnibus.factory_name' => 'canpar',
             'omnibus.factory_title' => 'Canpar',
+            'omnibus.policy' => __DIR__.'/policy.json',
             'omnibus.required_options' => ['user_id', 'password', 'shipper_number'],
             'sandbox' => false,
             'omnibus.api' => function (Config $c) {
                 $http = $this->http ?? HttpClient::create();
 
-                return new Api($http, (string) $c['user_id'], (string) $c['password'], (string) $c['shipper_number'], (bool) $c['sandbox']);
+                return new Api($http, (string) $c['user_id'], (string) $c['password'], (string) $c['shipper_number'], (bool) $c['sandbox'], backoff: $c->backoff());
             },
             'omnibus.action.rating' => static fn (Config $c) => $c->get('rates') ? null : new RatingAction(),
             'omnibus.action.shipping' => new ShippingAction(),
