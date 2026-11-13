@@ -3,6 +3,42 @@
 Canpar for [omnisense/omnibus](https://github.com/glitchr-omnisense/omnibus): rates, shipments with
 their labels, tracking and voids - the CanShip web services (SOAP).
 
+## Install and a first call
+
+```sh
+composer require omnibus/canpar
+```
+
+No account for this first call: Canpar's answer is recorded (`Omnibus\Testing\RecordedHttpClient`
+answers in place of the API), so nothing leaves the process. With your own credentials, give the
+factory your HTTP client (or none: it makes its own) and drop the recorded one.
+
+```php
+<?php
+
+require __DIR__.'/vendor/autoload.php';
+
+use Omnibus\Canpar\CanparGatewayFactory;
+use Omnibus\Testing\RecordedHttpClient;
+
+// Canpar's answer, recorded: no account, and nothing leaves the process.
+$http = new RecordedHttpClient([
+    'body:trackByBarcode' => '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"><soapenv:Body><ns:trackByBarcodeResponse xmlns:ns="http://ws.business.canshipws.canpar.com">'
+        .'<ns:return xmlns:ax="http://dto.canshipws.canpar.com"><ax:result><ax:barcode>D420000000012345</ax:barcode><ax:delivered_date_time>2026-10-02T10:15:00</ax:delivered_date_time>'
+        .'<ax:events><ax:code>DEL</ax:code><ax:code_description_en>Delivered</ax:code_description_en><ax:local_date_time>2026-10-02T10:15:00</ax:local_date_time>'
+        .'<ax:address><ax:city>TORONTO</ax:city><ax:province>ON</ax:province></ax:address></ax:events></ax:result></ns:return></ns:trackByBarcodeResponse></soapenv:Body></soapenv:Envelope>',
+]);
+$gateway = (new CanparGatewayFactory($http))->create(['user_id' => 'user@example.org', 'password' => 'pass', 'shipper_number' => '99999999', 'sandbox' => true]);
+
+$tracking = $gateway->track('D420000000012345');
+echo $tracking->status->value, ' - ', $tracking->latest()?->description, "\n";   // delivered - Delivered
+```
+
+A real call needs a Canpar account (the credentials below). The answer is shaped after Canpar's
+published documentation; the package has not been run against its service yet.
+
+## Configuration
+
 ```php
 $gateway = (new CanparGatewayFactory($http))->create($options);   // $http: the application's HTTP client - none given, the factory makes its own; the options below
 ```
